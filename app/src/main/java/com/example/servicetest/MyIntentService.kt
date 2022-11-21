@@ -1,5 +1,6 @@
 package com.example.servicetest
 
+import android.app.IntentService
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -12,10 +13,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 
+class MyIntentService : IntentService(NAME) {
 
-class MyForegroundService : Service() {
-
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     override fun onCreate() {
         super.onCreate()
@@ -24,27 +23,19 @@ class MyForegroundService : Service() {
         log("onCreate")
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        coroutineScope.launch {
-            log("onStartCommand")
-            for (i in 0 until 3) {
-                delay(1000)
-                log("Timer $i")
-            }
-            stopSelf()
-        }
-        return START_NOT_STICKY
-
-    }
-
     override fun onDestroy() {
-        coroutineScope.cancel()
+
         super.onDestroy()
         log("onDestroy")
     }
 
-    override fun onBind(p0: Intent?): IBinder? {
-        TODO("Not yet implemented")
+
+    override fun onHandleIntent(p0: Intent?) {
+        log("onHandleIntent")
+        for (i in 0 until 100) {
+            Thread.sleep(1000)
+            log("Timer $i")
+        }
     }
 
     private fun log(message: String) {
@@ -52,7 +43,7 @@ class MyForegroundService : Service() {
     }
 
     private fun createNotificationChannel() {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(Service.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationChannel = NotificationChannel(
                 CHANNEL_ID,
@@ -73,12 +64,14 @@ class MyForegroundService : Service() {
     }
 
     companion object {
+
         private const val CHANNEL_ID = "chanel_id"
+        private const val NAME = "my_intent_service"
         private const val CHANNEL_NAME = "channel_name"
         private const val NOTIFICATION_ID = 1
 
         fun newIntent(context: Context): Intent {
-            return Intent(context, MyForegroundService::class.java)
+            return Intent(context, MyIntentService::class.java)
         }
     }
 
