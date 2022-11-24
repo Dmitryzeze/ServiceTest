@@ -1,6 +1,5 @@
 package com.example.servicetest
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -14,22 +13,33 @@ import kotlinx.coroutines.*
 
 
 class MyForegroundService : Service() {
+    private val notificationBuilder by lazy {
+        createNotificationBuilder()
+    }
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+
+    private val notificationManager by lazy {
+        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID,createNotification())
+        startForeground(NOTIFICATION_ID, notificationBuilder.build())
         log("onCreate")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         coroutineScope.launch {
             log("onStartCommand")
-            for (i in 0 until 3) {
+            for (i in 0..100 step 5) {
                 delay(1000)
                 log("Timer $i")
+                val notification = notificationBuilder
+                    .setProgress(100,i,false)
+                    .build()
+                notificationManager.notify(NOTIFICATION_ID,notification)
             }
             stopSelf()
         }
@@ -52,7 +62,6 @@ class MyForegroundService : Service() {
     }
 
     private fun createNotificationChannel() {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationChannel = NotificationChannel(
                 CHANNEL_ID,
@@ -63,14 +72,13 @@ class MyForegroundService : Service() {
         }
     }
 
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Title")
-            .setContentText("Text")
-            .setSmallIcon(R.drawable.ic_launcher_background)
-            .build()
+    private fun createNotificationBuilder() = NotificationCompat.Builder(this, CHANNEL_ID)
+        .setContentTitle("Title")
+        .setContentText("Text")
+        .setSmallIcon(R.drawable.ic_launcher_background)
+        .setProgress(100, 0, false)
+        .setOnlyAlertOnce(true)
 
-    }
 
     companion object {
         private const val CHANNEL_ID = "chanel_id"
