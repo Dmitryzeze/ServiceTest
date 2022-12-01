@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -16,6 +17,8 @@ class MyForegroundService : Service() {
     private val notificationBuilder by lazy {
         createNotificationBuilder()
     }
+
+    var onProgressChanged: ((Int)->Unit)? = null
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
@@ -40,6 +43,7 @@ class MyForegroundService : Service() {
                     .setProgress(100,i,false)
                     .build()
                 notificationManager.notify(NOTIFICATION_ID,notification)
+                onProgressChanged?.invoke(i)
             }
             stopSelf()
         }
@@ -53,8 +57,8 @@ class MyForegroundService : Service() {
         log("onDestroy")
     }
 
-    override fun onBind(p0: Intent?): IBinder? {
-        TODO("Not yet implemented")
+    override fun onBind(p0: Intent?): IBinder {
+        return LocalBinder()
     }
 
     private fun log(message: String) {
@@ -79,6 +83,9 @@ class MyForegroundService : Service() {
         .setProgress(100, 0, false)
         .setOnlyAlertOnce(true)
 
+    inner class LocalBinder: Binder(){
+        fun getService() = this@MyForegroundService
+    }
 
     companion object {
         private const val CHANNEL_ID = "chanel_id"
